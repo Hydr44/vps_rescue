@@ -1,0 +1,78 @@
+server {
+  listen 443 ssl http2;
+  server_name sdi.rescuemanager.eu;
+
+  # TLS server
+  ssl_certificate           /etc/nginx/certs/AE_SERVER_fullchain.pem;
+  ssl_certificate_key       /etc/nginx/certs/sdi_server_rescuemanager_new.key;
+  ssl_trusted_certificate   /etc/nginx/certs/caentrate.pem;
+
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+  ssl_prefer_server_ciphers on;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 1.1.1.1 8.8.8.8 valid=300s;
+    resolver_timeout 5s;
+
+  # mTLS (TEST)
+  ssl_client_certificate /etc/nginx/certs/CAEntratetest.pem;
+  ssl_verify_client optional;   # → metti 'on' quando il simulatore chiama correttamente
+  ssl_verify_depth 3;
+
+  # Hardening / MTOM
+  client_max_body_size 25m;
+  proxy_request_buffering off;
+  proxy_buffering off;
+  proxy_read_timeout 120s;
+  proxy_send_timeout 120s;
+
+  # Proxy → upstream (Vercel/Next) con SNI
+  proxy_http_version 1.1;
+  proxy_ssl_server_name on;
+
+  # TEST
+  # STRICT mTLS PROBE
+  location = /api/sdi/_strict_probe {
+    return 200 "STRICT mTLS OK\n";
+  }
+
+  error_page 495 = @mtls_required;
+  error_page 496 = @mtls_required;
+
+  location @mtls_required {
+    return 401 "CLIENT CERT REQUIRED\n";
+    add_header Content-Type text/plain;
+  }
+  location = /api/sdi/test/ricezione {
+    proxy_pass https://rescuemanager.eu/api/sdi/test/ricezione;
+
+    proxy_set_header Host              rescuemanager.eu;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Real-IP         $remote_addr;
+
+    proxy_set_header X-SSL-Client-Verify $ssl_client_verify;
+    proxy_set_header X-SSL-Client-DN     $ssl_client_s_dn;
+  }
+
+  # PROD
+  location = /api/sdi/ricezione {
+    proxy_pass https://rescuemanager.eu/api/sdi/ricezione;
+
+    proxy_set_header Host              rescuemanager.eu;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header X-Real-IP         $remote_addr;
+
+    proxy_set_header X-SSL-Client-Verify $ssl_client_verify;
+    proxy_set_header X-SSL-Client-DN     $ssl_client_s_dn;
+  }
+
+  # Blocca tutto il resto
+  location / { return 404; }
+}
+
+server {
+  listen 80;
+  server_name sdi.rescuemanager.eu;
+  return 301 https://$server_name$request_uri;
+}
