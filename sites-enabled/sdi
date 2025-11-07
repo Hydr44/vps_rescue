@@ -17,7 +17,7 @@ server {
 
   # mTLS (TEST)
   ssl_client_certificate /etc/nginx/certs/CAEntratetest.pem;
-  ssl_verify_client optional;   # → metti 'on' quando il simulatore chiama correttamente
+  ssl_verify_client optional;   # fase di test: mTLS non forzato
   ssl_verify_depth 3;
 
   # Hardening / MTOM
