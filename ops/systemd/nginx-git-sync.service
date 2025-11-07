@@ -1,0 +1,11 @@
+[Unit]
+Description=Sincronizza /etc/nginx da GitHub
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nginx_git_sync.sh
+
+[Install]
+WantedBy=multi-user.target
