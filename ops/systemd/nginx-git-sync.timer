@@ -1,9 +1,9 @@
 [Unit]
-Description=Esegue nginx-git-sync ogni 5 minuti
+Description=Esegue nginx-git-sync ogni 1 minuto
 
 [Timer]
-OnBootSec=2min
-OnUnitActiveSec=5min
+OnBootSec=1min
+OnUnitActiveSec=1min
 Persistent=true
 
 [Install]
